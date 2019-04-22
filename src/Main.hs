@@ -1,13 +1,16 @@
 module Main where
 
 import           Prelude                           hiding ( (!!) )
-import           System.Random
-import           Data.List.NonEmpty                       ( NonEmpty(..)
+import           Data.List.NonEmpty                       ( NonEmpty
                                                           , (!!)
                                                           , fromList
                                                           )
-import           Control.Monad.Random.Class        hiding ( fromList )
-import           Control.Monad.Random.Strict       hiding ( fromList )
+
+import           Control.Monad.Random.Strict              ( RandomGen
+                                                          , Rand
+                                                          , evalRandIO
+                                                          , getRandomR
+                                                          )
 
 main :: IO ()
 main = do
