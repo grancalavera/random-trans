@@ -1,0 +1,32 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.1.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 8710a1017f83daaef7ae4606862958a4f8f9cf6323cecd7e466725730e957981
+
+name:           random-trans
+version:        0.1.0.0
+category:       Web
+homepage:       https://github.com/githubuser/random-trans#readme
+author:         Author name here
+maintainer:     example@example.com
+copyright:      2019 Author name here
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+
+executable random-trans
+  main-is: Main.hs
+  other-modules:
+      Paths_random_trans
+  hs-source-dirs:
+      src
+  build-depends:
+      MonadRandom
+    , base >=4.7 && <5
+    , random
+  default-language: Haskell2010
