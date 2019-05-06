@@ -13,8 +13,9 @@ extra-source-files:
 
 dependencies:
   - base >= 4.7 && < 5
-  - random
   - MonadRandom
+  - validation
+  - lens
 
 executables:
   random-trans:
