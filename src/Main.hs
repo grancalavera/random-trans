@@ -1,3 +1,5 @@
+{-# LANGUAGE ExplicitForAll #-}
+
 module Main where
 
 import           Prelude                           hiding ( (!!) )
@@ -15,6 +17,15 @@ import           Control.Monad.Random.Strict              ( RandomGen
 import           Control.Lens                             ( (#) )
 import           Data.Validation
 
+newtype Range a = Range { unRange :: (a ,a) }
+
+data Error = FromGreaterThanTo
+           | NotAnInteger String
+           | NotEven Int
+           | NotOdd Int
+           | InvalidFromEvenToOddRange
+           deriving Show
+
 main :: IO ()
 main = do
   putStrLn "Enter an even integer:"
@@ -23,9 +34,6 @@ main = do
     "Enter an odd integer GREATER than the even integer you just entered:"
   toS <- getLine
   putStrLn $ "from: " <> fromS <> " to: " <> toS
-  -- print =<< evalRandIO (shuffle ([] :: [Int]))
-  -- print =<< evalRandIO (shuffle [1])
-  -- print =<< evalRandIO (shuffle [1 .. 10])
 
 shuffle :: (RandomGen g, Eq a) => [a] -> Rand g [a]
 shuffle [] = return []
@@ -37,50 +45,26 @@ shuffle xs = do
 choose :: (RandomGen g) => NonEmpty a -> Rand g a
 choose xs = (xs !!) <$> getRandomR (0, length xs - 1)
 
-newtype Range a = Range { unRange :: (a ,a) }
+mkEvenOddPair :: String -> String -> Validation [Error] (Int, Int)
+mkEvenOddPair evenS oddS =
+  (,) <$> mkInteger validateEven evenS <*> mkInteger validateOdd oddS
 
-data Error = FromGreaterThanTo
-           | NotAnInteger String
-           | NotEven
-           | NotOdd
-           | InvalidFromEvenToOddRange
-           deriving Show
+mkInteger :: (Int -> Validation [Error] ()) -> String -> Validation [Error] Int
+mkInteger validateParity s = fromEither $ do
+  int <- parseInt s
+  toEither $ validateParity int
+  _Success # int
 
-mkRange :: Ord a => a -> a -> Validation [Error] (Range a)
-mkRange from to =
-  Range <$> validate [FromGreaterThanTo] (uncurry (<)) (from, to)
+parseInt :: Validate f => String -> f [Error] Int
+parseInt s = maybe (_Failure # [NotAnInteger s]) (_Success #) (readMaybe s)
 
-mkInteger :: Validate f => String -> f [Error] Int
-mkInteger s = maybe (_Failure # [NotAnInteger s]) (_Success #) (readMaybe s)
-
-
-getInt :: String -> Either [Error] Int
-getInt = mkInteger
+validateOdd, validateEven :: Validate f => Int -> f [Error] ()
+validateOdd int = validateInt (NotOdd int) odd int
+validateEven int = validateInt (NotEven int) even int
 
 validateInt :: Validate f => Error -> (Int -> Bool) -> Int -> f [Error] ()
 validateInt e isValid x | isValid x = _Success # ()
                         | otherwise = _Failure # [e]
 
-validateOdd, validateEven :: Validate f => Int -> f [Error] ()
-validateOdd = validateInt NotOdd odd
-validateEven = validateInt NotEven even
-
-parseInt :: (Int -> Either [Error] ()) -> String -> Either [Error] Int
-parseInt valiateInt s = do
-  i <- mkInteger s
-
-  _Failure # [NotOdd]
---   i <- getInt
---  where
---   getInt :: Either [Error] Int
---   getInt = mkInteger s
-
--- parseInt :: Validate f => (Int -> f [Error] ()) -> String -> Either [Error] Int
--- parseInt v s = mkInteger s >>= \i -> v i >> return i
-
--- fromEither $ do
---   i <- toEither $ mkInteger x
---   toEither $ i <$ v i
-
--- parseEvenInt = parseInt (validateInt NotEven even)
--- parseOddInt = parseInt (validateInt NotOdd odd)
+mkRange :: Ord a => (a, a) -> Validation [Error] (Range a)
+mkRange r = Range <$> validate [FromGreaterThanTo] (uncurry (<)) r
