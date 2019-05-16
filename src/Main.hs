@@ -51,9 +51,8 @@ mkRange from to =
   Range <$> validate [FromGreaterThanTo] (uncurry (<)) (from, to)
 
 mkInteger :: Validate f => String -> f [Error] Int
-mkInteger s = case readMaybe s of
-  Just x  -> _Success # x
-  Nothing -> _Failure # [NotAnInteger s]
+mkInteger s = maybe (_Failure # [NotAnInteger s]) (_Success #) (readMaybe s)
+
 
 getInt :: String -> Either [Error] Int
 getInt = mkInteger
