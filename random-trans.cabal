@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ce8db9b5cb3f82f7c43eae4bfe743451f0e8b568b7dd8f3cc2c19405253a080b
+-- hash: c99447d5b00532454b491c9b0f6d25a08d75570abed940159801d8b69e975f4a
 
 name:           random-trans
 version:        0.1.0.0
@@ -34,6 +34,7 @@ executable random-trans
     , containers
     , lens
     , mtl
+    , random
     , text
     , transformers
     , validation

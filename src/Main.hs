@@ -3,6 +3,7 @@
 module Main where
 
 import           Prelude                           hiding ( (!!) )
+import           System.Random                            ( getStdGen )
 import           Text.Read                                ( readMaybe )
 import           Data.Maybe                               ( maybe )
 import           Data.List.NonEmpty                       ( NonEmpty
@@ -13,6 +14,7 @@ import           Control.Monad.Random.Strict              ( RandomGen
                                                           , Rand
                                                           , evalRandIO
                                                           , getRandomR
+                                                          , liftRandT
                                                           )
 import           Control.Lens                             ( (#) )
 import           Control.Monad.Trans                      ( liftIO )
@@ -32,14 +34,14 @@ data Error = FromGreaterThanTo
            | InvalidFromEvenToOddRange
            deriving Show
 
+data Parity = Even | Odd deriving Show
+
 main :: IO ()
 main = do
-  putStrLn "Enter an even integer:"
-  fromS <- getLine
-  putStrLn
-    "Enter an odd integer GREATER than the even integer you just entered:"
-  toS <- getLine
-  putStrLn $ "from: " <> fromS <> " to: " <> toS
+  let input = [1, 2, 3, 4, 5]
+  putStrLn $ "Original input:  " <> show input
+  result <- evalRandIO (shuffle input)
+  putStrLn $ "Shuffled result: " <> show result
 
 shuffle :: (RandomGen g, Eq a) => [a] -> Rand g [a]
 shuffle [] = return []
@@ -51,9 +53,14 @@ shuffle xs = do
 choose :: (RandomGen g) => NonEmpty a -> Rand g a
 choose xs = (xs !!) <$> getRandomR (0, length xs - 1)
 
+asEither :: Either e a -> Either e a
+asEither = id
+
 mkEvenOddPair :: String -> String -> Validation [Error] (Int, Int)
-mkEvenOddPair evenS oddS =
-  (,) <$> mkInteger validateEven evenS <*> mkInteger validateOdd oddS
+mkEvenOddPair evenCandidate oddCandidate =
+  (,)
+    <$> mkIntWithParity Even evenCandidate
+    <*> mkIntWithParity Odd  oddCandidate
 
 mkInteger :: (Int -> Validation [Error] ()) -> String -> Validation [Error] Int
 mkInteger validateParity s = fromEither $ do
@@ -61,16 +68,17 @@ mkInteger validateParity s = fromEither $ do
   toEither $ validateParity int
   _Success # int
 
+mkIntWithParity :: Parity -> String -> Validation [Error] Int
+mkIntWithParity parity candidate = fromEither $ do
+  int <- parseInt candidate
+  toEither $ case parity of
+    Odd  -> validate [NotOdd int] odd int
+    Even -> validate [NotEven int] even int
+
+mkRange :: (Validate f, Ord a) => (a, a) -> f [Error] (Range a)
+mkRange (from, to) = if from <= to
+  then _Success # Range (from, to)
+  else _Failure # [FromGreaterThanTo]
+
 parseInt :: Validate f => String -> f [Error] Int
 parseInt s = maybe (_Failure # [NotAnInteger s]) (_Success #) (readMaybe s)
-
-validateOdd, validateEven :: Validate f => Int -> f [Error] ()
-validateOdd int = validateInt (NotOdd int) odd int
-validateEven int = validateInt (NotEven int) even int
-
-validateInt :: Validate f => Error -> (Int -> Bool) -> Int -> f [Error] ()
-validateInt e isValid x | isValid x = _Success # ()
-                        | otherwise = _Failure # [e]
-
-mkRange :: Ord a => (a, a) -> Validation [Error] (Range a)
-mkRange r = Range <$> validate [FromGreaterThanTo] (uncurry (<)) r
