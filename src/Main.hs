@@ -17,8 +17,12 @@ import           Control.Monad.Random.Strict              ( RandomGen
                                                           , liftRandT
                                                           )
 import           Control.Lens                             ( (#) )
+import           Control.Monad.IO.Class                   ( MonadIO )
 import           Control.Monad.Trans                      ( liftIO )
-import           Control.Monad.Trans.Except
+import           Control.Monad.Except                     ( ExceptT
+                                                          , liftEither
+                                                          , throwError
+                                                          )
 
 import           Data.Validation
 
@@ -53,32 +57,35 @@ shuffle xs = do
 choose :: (RandomGen g) => NonEmpty a -> Rand g a
 choose xs = (xs !!) <$> getRandomR (0, length xs - 1)
 
-asEither :: Either e a -> Either e a
-asEither = id
-
-mkEvenOddPair :: String -> String -> Validation [Error] (Int, Int)
-mkEvenOddPair evenCandidate oddCandidate =
-  (,)
-    <$> mkIntWithParity Even evenCandidate
-    <*> mkIntWithParity Odd  oddCandidate
-
-mkInteger :: (Int -> Validation [Error] ()) -> String -> Validation [Error] Int
-mkInteger validateParity s = fromEither $ do
-  int <- parseInt s
-  toEither $ validateParity int
-  _Success # int
-
-mkIntWithParity :: Parity -> String -> Validation [Error] Int
-mkIntWithParity parity candidate = fromEither $ do
-  int <- parseInt candidate
-  toEither $ case parity of
-    Odd  -> validate [NotOdd int] odd int
-    Even -> validate [NotEven int] even int
+-- I want to create this pair to test a validation with more than 1 error
+-- mkEvenOddPair :: String -> String -> Validation [Error] (Int, Int)
+-- mkEvenOddPair evenCandidate oddCandidate =
+--   (,)
+--     <$> mkIntWithParity Even evenCandidate
+--     <*> mkIntWithParity Odd  oddCandidate
 
 mkRange :: (Validate f, Ord a) => (a, a) -> f [Error] (Range a)
 mkRange (from, to) = if from <= to
   then _Success # Range (from, to)
   else _Failure # [FromGreaterThanTo]
+
+mkIntWithParity :: Validate f => Parity -> String -> f [Error] Int
+mkIntWithParity parity candidate = case validation of
+  Right x     -> _Success # x
+  Left  error -> _Failure # error
+ where
+  validation :: Either [Error] Int
+  validation = do
+    int <- parseInt candidate
+    validateParity parity int
+    return int
+
+validateParity :: Validate f => Parity -> Int -> f [Error] ()
+validateParity parity candidate =
+  let (error, predicate) = case parity of
+        Odd  -> ([NotOdd candidate], odd)
+        Even -> ([NotEven candidate], even)
+  in  if predicate candidate then _Success # () else _Failure # error
 
 parseInt :: Validate f => String -> f [Error] Int
 parseInt s = maybe (_Failure # [NotAnInteger s]) (_Success #) (readMaybe s)
