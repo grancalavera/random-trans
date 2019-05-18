@@ -38,6 +38,9 @@ data Error = FromGreaterThanTo
 
 data Parity = Even | Odd deriving Show
 
+
+
+
 main :: IO ()
 main = void $ runExceptT program >>= print
 
