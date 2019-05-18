@@ -1,4 +1,4 @@
-{-# LANGUAGE ExplicitForAll #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Main where
 
@@ -15,7 +15,13 @@ import           Control.Monad.Random.Strict              ( RandomGen
                                                           , getRandomR
                                                           )
 import           Control.Lens                             ( (#) )
+import           Control.Monad.Trans                      ( liftIO )
+import           Control.Monad.Trans.Except
+
 import           Data.Validation
+
+-- Dropped the deprecated Control.Monad.Trans.Either.
+-- Use Control.Monad.Trans.Except from transformers and/or transformers-compat instead.
 
 newtype Range a = Range { unRange :: (a ,a) }
 

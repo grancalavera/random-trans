@@ -13,9 +13,13 @@ extra-source-files:
 
 dependencies:
   - base >= 4.7 && < 5
-  - MonadRandom
-  - validation
+  - containers
   - lens
+  - MonadRandom
+  - mtl
+  - text
+  - transformers
+  - validation
 
 executables:
   random-trans:

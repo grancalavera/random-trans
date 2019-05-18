@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d271564f1736bcc8a4626024202cbec069e997100f7ac1b9083e506aba1894d6
+-- hash: ce8db9b5cb3f82f7c43eae4bfe743451f0e8b568b7dd8f3cc2c19405253a080b
 
 name:           random-trans
 version:        0.1.0.0
@@ -22,12 +22,19 @@ extra-source-files:
 executable random-trans
   main-is: Main.hs
   other-modules:
+      GentleIntro
+      GentleIntroGeneralised
+      GentleIntroMTL
       Paths_random_trans
   hs-source-dirs:
       src
   build-depends:
       MonadRandom
     , base >=4.7 && <5
+    , containers
     , lens
+    , mtl
+    , text
+    , transformers
     , validation
   default-language: Haskell2010
