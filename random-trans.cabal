@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c99447d5b00532454b491c9b0f6d25a08d75570abed940159801d8b69e975f4a
+-- hash: 04b202d7677b647e8f41a788127fe725b15ec15dcd5cc7e60d44400805bbd23f
 
 name:           random-trans
 version:        0.1.0.0
@@ -28,6 +28,7 @@ executable random-trans
       Paths_random_trans
   hs-source-dirs:
       src
+  ghc-options: -Wall
   build-depends:
       MonadRandom
     , base >=4.7 && <5

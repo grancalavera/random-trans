@@ -26,3 +26,5 @@ executables:
   random-trans:
     source-dirs: src
     main: Main.hs
+    ghc-options:
+      - -Wall
