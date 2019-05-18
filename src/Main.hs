@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Main where
 
 import           Prelude                           hiding ( (!!) )
@@ -12,17 +10,15 @@ import           Data.List.NonEmpty                       ( NonEmpty
                                                           )
 import           Control.Monad.Random.Strict              ( RandomGen
                                                           , Rand
-                                                          , evalRandIO
                                                           , getRandomR
-                                                          , liftRandT
                                                           , evalRand
                                                           )
 import           Control.Lens                             ( (#) )
+import           Control.Monad                            ( void )
 import           Control.Monad.IO.Class                   ( MonadIO )
 import           Control.Monad.Trans                      ( liftIO )
 import           Control.Monad.Except                     ( ExceptT
                                                           , liftEither
-                                                          , throwError
                                                           , runExceptT
                                                           )
 
@@ -43,7 +39,7 @@ data Error = FromGreaterThanTo
 data Parity = Even | Odd deriving Show
 
 main :: IO ()
-main = runExceptT program >>= print >> return ()
+main = void $ runExceptT program >>= print
 
 
 
@@ -81,7 +77,7 @@ shuffle xs = do
 choose :: (RandomGen g) => NonEmpty a -> Rand g a
 choose xs = (xs !!) <$> getRandomR (0, length xs - 1)
 
--- I want to create this pair to test a validation with more than 1 error
+-- I want to create this pair to test a validation with more than 1 err
 mkEvenOddPair :: String -> String -> Validation [Error] (Int, Int)
 mkEvenOddPair evenCandidate oddCandidate =
   (,)
@@ -100,10 +96,10 @@ mkIntWithParity parity candidate = either (_Failure #) (_Success #) $ do
 
 validateParity :: Validate f => Parity -> Int -> f [Error] ()
 validateParity parity candidate =
-  let (error, predicate) = case parity of
+  let (err, predicate) = case parity of
         Odd  -> ([NotOdd candidate], odd)
         Even -> ([NotEven candidate], even)
-  in  if predicate candidate then _Success # () else _Failure # error
+  in  if predicate candidate then _Success # () else _Failure # err
 
 parseInt :: Validate f => String -> f [Error] Int
 parseInt s = maybe (_Failure # [NotAnInteger s]) (_Success #) (readMaybe s)

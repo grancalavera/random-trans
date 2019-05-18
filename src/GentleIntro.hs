@@ -8,7 +8,6 @@ module GentleIntro where
 import           Data.Text
 import qualified Data.Text.IO                  as T
 import           Data.Map                      as Map
-import           Control.Applicative
 
 data LoginError = InvalidEmail | NoSuchUser | WrongPassword deriving Show
 

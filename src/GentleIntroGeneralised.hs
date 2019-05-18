@@ -9,11 +9,10 @@ import qualified Data.Text.IO                  as T
 import qualified Data.Map                      as Map
 import           Data.Map                                 ( Map )
 import           Control.Applicative                      ( liftA2 )
+import           Control.Monad                            ( void )
 
 main :: IO ()
-main = do
-  runExceptT loginDialogue
-  return ()
+main = void $ runExceptT loginDialogue
 
 data LoginError = InvalidEmail
                 | NoSuchUser

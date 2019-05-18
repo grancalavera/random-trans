@@ -8,11 +8,10 @@ import           Data.Text                                ( Text
 import qualified Data.Text.IO                  as T
 import qualified Data.Map                      as Map
 import           Data.Map                                 ( Map )
-import           Control.Applicative                      ( liftA2 )
+import           Control.Monad                            ( void )
 import           Control.Monad.IO.Class                   ( MonadIO
                                                           , liftIO
                                                           )
-import           Control.Monad.Trans                      ( lift )
 import           Control.Monad.Except                     ( ExceptT
                                                           , catchError
                                                           , throwError
@@ -21,9 +20,7 @@ import           Control.Monad.Except                     ( ExceptT
                                                           )
 
 main :: IO ()
-main = do
-  runExceptT loginDialogue
-  return ()
+main = void $ runExceptT loginDialogue
 
 data LoginError = InvalidEmail
                 | NoSuchUser
