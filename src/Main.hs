@@ -80,7 +80,7 @@ shuffle xs = do
 choose :: (RandomGen g) => NonEmpty a -> Rand g a
 choose xs = (xs !!) <$> getRandomR (0, length xs - 1)
 
--- I want to create this pair to test a validation with more than 1 err
+-- I want to create this pair to test a validation with more than 1 error
 mkEvenOddPair :: String -> String -> Validation [Error] (Int, Int)
 mkEvenOddPair evenCandidate oddCandidate =
   (,)
