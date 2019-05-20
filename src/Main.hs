@@ -15,18 +15,17 @@ import           Control.Monad.Random.Strict              ( RandomGen
                                                           )
 import           Control.Lens                             ( (#) )
 import           Control.Monad                            ( void )
-import           Control.Monad.IO.Class                   ( MonadIO )
-import           Control.Monad.Trans                      ( liftIO )
+import           Control.Monad.IO.Class                   ( MonadIO
+                                                          , liftIO
+                                                          )
 import           Control.Monad.Except                     ( ExceptT
                                                           , liftEither
                                                           , runExceptT
                                                           )
 
 import           Data.Validation                          ( Validate
-                                                          , Validation
                                                           , _Failure
                                                           , _Success
-                                                          , toEither
                                                           )
 
 data Error = FromGreaterThanTo
@@ -38,6 +37,7 @@ data Error = FromGreaterThanTo
 
 data Parity = Even | Odd deriving Show
 
+type Program m a = ExceptT [Error] m a
 
 
 
@@ -47,7 +47,7 @@ main = void $ runExceptT program >>= print
 
 
 
-program :: MonadIO m => ExceptT [Error] m [Int]
+program :: MonadIO m => Program m [Int]
 program = do
 
   liftIO $ putStrLn "Enter an even integer"
@@ -56,7 +56,7 @@ program = do
   liftIO $ putStrLn ("Enter an odd integer greater than " <> evenCandidate)
   oddCandidate <- liftIO getLine
 
-  (from, to) <- liftEither . toEither $ mkEvenOddPair evenCandidate oddCandidate
+  (from, to) <- liftEither  $ mkEvenOddPair evenCandidate oddCandidate
   liftEither $ validateRange (from, to)
 
   let input = [from .. to]
@@ -81,7 +81,7 @@ choose :: (RandomGen g) => NonEmpty a -> Rand g a
 choose xs = (xs !!) <$> getRandomR (0, length xs - 1)
 
 -- I want to create this pair to test a validation with more than 1 error
-mkEvenOddPair :: String -> String -> Validation [Error] (Int, Int)
+mkEvenOddPair :: (Validate f, Applicative (f [Error])) => String -> String -> f [Error] (Int, Int)
 mkEvenOddPair evenCandidate oddCandidate =
   (,)
     <$> mkIntWithParity Even evenCandidate
