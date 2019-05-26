@@ -28,6 +28,24 @@ import           Data.Validation                          ( Validate
                                                           , _Success
                                                           )
 
+-- http://dev.stephendiehl.com/hask/#mtl-transformers
+
+-- lift :: (Monad m, MonadTrans t) => m a -> t m a
+-- liftIO :: MonadIO m => IO a -> m a
+
+-- class MonadTrans t where
+--     lift :: Monad m => m a -> t m a
+
+-- class (Monad m) => MonadIO m where
+--     liftIO :: IO a -> m a
+
+-- instance MonadIO IO where
+--     liftIO = id
+
+-- In terms of generality the mtl library is the most common general interface for these monads,
+-- which itself depends on the transformers library which generalizes the "basic" monads described
+-- above into transformers.
+
 data Error = FromGreaterThanTo
            | NotAnInteger String
            | NotEven Int
