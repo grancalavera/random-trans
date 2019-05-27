@@ -21,6 +21,7 @@ dependencies:
   - random
   - transformers
   - validation
+  - optparse-applicative
 
 executables:
   random-trans:

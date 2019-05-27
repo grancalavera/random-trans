@@ -27,6 +27,17 @@ import           Data.Validation                          ( Validate
                                                           , _Failure
                                                           , _Success
                                                           )
+import           Options.Applicative                      ( Parser
+                                                          , flag
+                                                          , long
+                                                          , short
+                                                          , help
+                                                          , execParser
+                                                          , helper
+                                                          , info
+                                                          , fullDesc
+                                                          , progDesc
+                                                          )
 
 -- http://dev.stephendiehl.com/hask/#mtl-transformers
 
@@ -53,6 +64,20 @@ data Error = FromGreaterThanTo
            | InvalidFromEvenToOddRange
            deriving Show
 
+data ParityOrder = OddEven | EvenOdd deriving (Show)
+
+data Options = Options
+  { parityOrder :: ParityOrder } deriving Show
+
+options :: Parser Options
+options = Options <$> flag
+  OddEven
+  EvenOdd
+  (long "invert-parity-order" <> short 'i' <> help
+    "Invert parity order: from odd-even to even-odd"
+  )
+
+
 data Parity = Even | Odd deriving Show
 
 type Program m a = ExceptT [Error] m a
@@ -60,10 +85,14 @@ type Program m a = ExceptT [Error] m a
 
 
 main :: IO ()
-main = void $ runExceptT program >>= print
-
-
-
+main = do
+  result <- execParser opts
+  print result
+  void $ runExceptT program >>= print
+ where
+  opts = info
+    (helper <*> options)
+    (fullDesc <> progDesc "Validation and Random in the same program")
 
 program :: MonadIO m => Program m [Int]
 program = do
@@ -74,7 +103,7 @@ program = do
   liftIO $ putStrLn ("Enter an odd integer greater than " <> evenCandidate)
   oddCandidate <- liftIO getLine
 
-  (from, to) <- liftEither  $ mkEvenOddPair evenCandidate oddCandidate
+  (from, to)   <- liftEither $ mkEvenOddPair evenCandidate oddCandidate
   liftEither $ validateRange (from, to)
 
   let input = [from .. to]
@@ -99,7 +128,11 @@ choose :: (RandomGen g) => NonEmpty a -> Rand g a
 choose xs = (xs !!) <$> getRandomR (0, length xs - 1)
 
 -- I want to create this pair to test a validation with more than 1 error
-mkEvenOddPair :: (Validate f, Applicative (f [Error])) => String -> String -> f [Error] (Int, Int)
+mkEvenOddPair
+  :: (Validate f, Applicative (f [Error]))
+  => String
+  -> String
+  -> f [Error] (Int, Int)
 mkEvenOddPair evenCandidate oddCandidate =
   (,)
     <$> mkIntWithParity Even evenCandidate
