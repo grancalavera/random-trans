@@ -29,3 +29,8 @@ that after validating the input for integer values, every step of the program de
 previous validation, which in turn means validations must run in the `Either` monad instead of
 running in the `Validation` applicative functor. Multiple errors wont be collected, since after
 the first error the program cannot continue.
+
+
+## Acknowledgments
+
+Based on [Refactoring to a Monad Transformer Stack ](https://thoughtbot.com/blog/refactoring-to-a-monad-transformer-stack) by [Josh Clayton](https://thoughtbot.com/blog/authors/josh-clayton) from [thoughtbot](https://thoughtbot.com/).

@@ -21,7 +21,6 @@ import           Control.Monad.Random.Strict              ( RandomGen
                                                           , evalRand
                                                           )
 import           Control.Lens                             ( (#) )
-import           Control.Monad                            ( void )
 import           Control.Monad.IO.Class                   ( MonadIO
                                                           , liftIO
                                                           )
@@ -54,8 +53,6 @@ import           Options.Applicative                      ( Parser
                                                           )
 type Program m a = ExceptT [AppError] m a
 
-
-
 data Parity = Even | Odd deriving Show
 
 data AppError = FromGreaterThanTo
@@ -81,7 +78,7 @@ main :: IO ()
 main = do
   options <- execParser opts
   result  <- runExceptT (runReaderT (runApp run) options)
-  void $ either renderError renderResult result
+  either renderError renderResult result
  where
   opts = info
     (helper <*> parseOptions)
@@ -99,7 +96,8 @@ parseOptions = Options <$> flag
   )
 
 renderError :: [AppError] -> IO ()
-renderError = foldr ((>>) . print) (return ())
+renderError = foldl (\printPrevious this -> printPrevious >> print this)
+                    (putStrLn "Program failed!")
 
 renderResult :: [Int] -> IO ()
 renderResult = putStrLn . ("Shuffled values: " <>) . show
