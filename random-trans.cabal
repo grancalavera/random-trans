@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 26020538748a97701daed3f8006112e07d9ac5d88179194c468b9bee30ef8da6
+-- hash: 9b5c6cc74ecd04b9c02cd6141fe8b3e65c482178ae58dff9a829aaf04ceb742f
 
 name:           random-trans
 version:        0.1.0.0
@@ -22,9 +22,6 @@ extra-source-files:
 executable random-trans
   main-is: Main.hs
   other-modules:
-      GentleIntro
-      GentleIntroGeneralised
-      GentleIntroMTL
       Paths_random_trans
   hs-source-dirs:
       src

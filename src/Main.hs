@@ -70,7 +70,7 @@ newtype Options = Options
 
 type AppConfig = MonadReader Options
 
-newtype App a = ProgramStack {
+newtype App a = App {
   runApp :: ReaderT Options (ExceptT [AppError] IO) a
 } deriving (Monad, Functor, Applicative, AppConfig, MonadIO, MonadError [AppError])
 
