@@ -1,7 +1,7 @@
 # random-trans
 
 > This is a simple application exercise to practise monad transformers. The application
-> runs with `ReaderT` at the top of the stack and performs effects in `MonadIO` and ExceptT.
+> runs with `ReaderT` at the top of the stack and performs effects in `MonadIO` and `ExceptT`.
 > Additionally there are random computations which run in `MonadIO`
 
 ## Usage
