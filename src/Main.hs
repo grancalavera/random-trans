@@ -122,10 +122,8 @@ getUserInput = do
 mkRangeFromInput
   :: (AppConfig m, MonadError [AppError] m) => (String, String) -> m [Int]
 mkRangeFromInput candidates = do
-  order      <- asks parityOrder
-  (from, to) <- liftEither . toEither $ case order of
-    OddEven -> uncurry mkOddEvenPair candidates
-    EvenOdd -> uncurry mkEvenOddPair candidates
+  pOrder     <- asks parityOrder
+  (from, to) <- liftEither . toEither $ mkPairWithParityOrder pOrder candidates
   liftEither $ validateRange (from, to)
   return [from .. to]
 
@@ -144,26 +142,20 @@ shuffle xs = do
 choose :: (RandomGen g) => NonEmpty a -> Rand g a
 choose xs = (xs !!) <$> getRandomR (0, length xs - 1)
 
--- I want to create this pair to test a validation with more than 1 error
-mkEvenOddPair
+-- Allows to test a validation with more than 1 error
+-- for instance sending two strings that will not
+-- validate as Int
+mkPairWithParityOrder
   :: (Validate f, Applicative (f [AppError]))
-  => String
-  -> String
+  => ParityOrder
+  -> (String, String)
   -> f [AppError] (Int, Int)
-mkEvenOddPair evenCandidate oddCandidate =
-  (,)
-    <$> mkIntWithParity Even evenCandidate
-    <*> mkIntWithParity Odd  oddCandidate
-
-mkOddEvenPair
-  :: (Validate f, Applicative (f [AppError]))
-  => String
-  -> String
-  -> f [AppError] (Int, Int)
-mkOddEvenPair oddCandidate evenCandidate =
-  (,)
-    <$> mkIntWithParity Odd  oddCandidate
-    <*> mkIntWithParity Even evenCandidate
+mkPairWithParityOrder pOrder = case pOrder of
+  OddEven -> mkPair Odd Even
+  EvenOdd -> mkPair Even Odd
+ where
+  mkPair p1 p2 (c1, c2) =
+    (,) <$> mkIntWithParity p1 c1 <*> mkIntWithParity p2 c2
 
 validateRange :: (Validate f, Ord a) => (a, a) -> f [AppError] ()
 validateRange (from, to) =
