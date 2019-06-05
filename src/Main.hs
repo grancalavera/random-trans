@@ -1,3 +1,10 @@
+{-# LANGUAGE GeneralisedNewtypeDeriving #-}
+-- The ConstraintKinds extension allows for using MonadReader providing the reader
+-- type but not the underlying monad; coupled with FlexibleContexts, AppOptions can
+-- use parametric polymorphism
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+
 module Main where
 
 import           Prelude                           hiding ( (!!) )
@@ -18,7 +25,13 @@ import           Control.Monad                            ( void )
 import           Control.Monad.IO.Class                   ( MonadIO
                                                           , liftIO
                                                           )
+import           Control.Monad.Reader                     ( ReaderT
+                                                          , MonadReader
+                                                          , asks
+                                                          , runReaderT
+                                                          )
 import           Control.Monad.Except                     ( ExceptT
+                                                          , MonadError
                                                           , liftEither
                                                           , runExceptT
                                                           )
@@ -38,84 +51,87 @@ import           Options.Applicative                      ( Parser
                                                           , fullDesc
                                                           , progDesc
                                                           )
+type Program m a = ExceptT [AppError] m a
 
--- http://dev.stephendiehl.com/hask/#mtl-transformers
-
--- lift :: (Monad m, MonadTrans t) => m a -> t m a
--- liftIO :: MonadIO m => IO a -> m a
-
--- class MonadTrans t where
---     lift :: Monad m => m a -> t m a
-
--- class (Monad m) => MonadIO m where
---     liftIO :: IO a -> m a
-
--- instance MonadIO IO where
---     liftIO = id
-
--- In terms of generality the mtl library is the most common general interface for these monads,
--- which itself depends on the transformers library which generalizes the "basic" monads described
--- above into transformers.
-
-data Error = FromGreaterThanTo
-           | NotAnInteger String
-           | NotEven Int
-           | NotOdd Int
-           | InvalidFromEvenToOddRange
-           deriving Show
-
-data ParityOrder = OddEven | EvenOdd deriving (Show)
-
-data Options = Options
-  { parityOrder :: ParityOrder } deriving Show
-
-options :: Parser Options
-options = Options <$> flag
-  OddEven
-  EvenOdd
-  (long "invert-parity-order" <> short 'i' <> help
-    "Invert parity order: from odd-even to even-odd"
-  )
 
 
 data Parity = Even | Odd deriving Show
 
-type Program m a = ExceptT [Error] m a
+data AppError = FromGreaterThanTo
+              | NotAnInteger String
+              | NotEven Int
+              | NotOdd Int
+              | InvalidFromEvenToOddRange
+           deriving Show
+
+data ParityOrder = OddEven | EvenOdd deriving (Show)
+
+newtype Options = Options
+  { parityOrder :: ParityOrder } deriving Show
 
 
+type AppConfig = MonadReader Options
+
+newtype App a = ProgramStack {
+  runApp :: ReaderT Options (ExceptT [AppError] IO) a
+} deriving (Monad, Functor, Applicative, AppConfig, MonadIO, MonadError [AppError])
 
 main :: IO ()
 main = do
-  result <- execParser opts
-  print result
-  void $ runExceptT program >>= print
+  options <- execParser opts
+  result  <- runExceptT (runReaderT (runApp run) options)
+  void $ either renderError renderResult result
  where
   opts = info
-    (helper <*> options)
+    (helper <*> parseOptions)
     (fullDesc <> progDesc "Validation and Random in the same program")
 
-program :: MonadIO m => Program m [Int]
-program = do
+run :: App [Int]
+run = getUserInput >>= mkRangeFromInput >>= shuffleRange
 
-  liftIO $ putStrLn "Enter an even integer"
-  evenCandidate <- liftIO getLine
+parseOptions :: Parser Options
+parseOptions = Options <$> flag
+  OddEven
+  EvenOdd
+  (long "invert-parity-order" <> short 'i' <> help
+    "Invert parity order: from odd-even (default) to even-odd (inverted)"
+  )
 
-  liftIO $ putStrLn ("Enter an odd integer greater than " <> evenCandidate)
-  oddCandidate <- liftIO getLine
+renderError :: [AppError] -> IO ()
+renderError = foldr ((>>) . print) (return ())
 
-  (from, to)   <- liftEither $ mkEvenOddPair evenCandidate oddCandidate
+renderResult :: [Int] -> IO ()
+renderResult = putStrLn . ("Shuffled values: " <>) . show
+
+getUserInput :: (AppConfig m, MonadIO m) => m (String, String)
+getUserInput = do
+  order <- asks parityOrder
+  case order of
+    OddEven -> prompt "odd" "even"
+    EvenOdd -> prompt "even" "odd"
+ where
+  prompt q1 q2 = do
+    c1 <- getCandidate $ "Enter an " <> q1 <> " integer"
+    c2 <- getCandidate $ "Enter an " <> q2 <> " integer greater than " <> c1
+    return (c1, c2)
+  getCandidate q = do
+    liftIO $ putStrLn q
+    liftIO getLine
+
+mkRangeFromInput
+  :: (AppConfig m, MonadError [AppError] m) => (String, String) -> m [Int]
+mkRangeFromInput candidates = do
+  order      <- asks parityOrder
+  (from, to) <- liftEither $ case order of
+    OddEven -> uncurry mkOddEvenPair candidates
+    EvenOdd -> uncurry mkEvenOddPair candidates
   liftEither $ validateRange (from, to)
+  return [from .. to]
 
-  let input = [from .. to]
-  liftIO $ putStrLn ("Input values: " <> show input)
-
+shuffleRange :: (AppConfig m, MonadIO m) => [Int] -> m [Int]
+shuffleRange range = do
   gen <- liftIO getStdGen
-  let result = evalRand (shuffle input) gen
-  liftIO $ putStrLn ("Shuffled values: " <> show result)
-  return result
-
-
-
+  return $ evalRand (shuffle range) gen
 
 shuffle :: (RandomGen g, Eq a) => [a] -> Rand g [a]
 shuffle [] = return []
@@ -129,31 +145,41 @@ choose xs = (xs !!) <$> getRandomR (0, length xs - 1)
 
 -- I want to create this pair to test a validation with more than 1 error
 mkEvenOddPair
-  :: (Validate f, Applicative (f [Error]))
+  :: (Validate f, Applicative (f [AppError]))
   => String
   -> String
-  -> f [Error] (Int, Int)
+  -> f [AppError] (Int, Int)
 mkEvenOddPair evenCandidate oddCandidate =
   (,)
     <$> mkIntWithParity Even evenCandidate
     <*> mkIntWithParity Odd  oddCandidate
 
-validateRange :: (Validate f, Ord a) => (a, a) -> f [Error] ()
+mkOddEvenPair
+  :: (Validate f, Applicative (f [AppError]))
+  => String
+  -> String
+  -> f [AppError] (Int, Int)
+mkOddEvenPair oddCandidate evenCandidate =
+  (,)
+    <$> mkIntWithParity Odd  oddCandidate
+    <*> mkIntWithParity Even evenCandidate
+
+validateRange :: (Validate f, Ord a) => (a, a) -> f [AppError] ()
 validateRange (from, to) =
   if from < to then _Success # () else _Failure # [FromGreaterThanTo]
 
-mkIntWithParity :: Validate f => Parity -> String -> f [Error] Int
+mkIntWithParity :: Validate f => Parity -> String -> f [AppError] Int
 mkIntWithParity parity candidate = either (_Failure #) (_Success #) $ do
   int <- parseInt candidate
   validateParity parity int
   return int
 
-validateParity :: Validate f => Parity -> Int -> f [Error] ()
+validateParity :: Validate f => Parity -> Int -> f [AppError] ()
 validateParity parity candidate =
   let (err, predicate) = case parity of
         Odd  -> ([NotOdd candidate], odd)
         Even -> ([NotEven candidate], even)
   in  if predicate candidate then _Success # () else _Failure # err
 
-parseInt :: Validate f => String -> f [Error] Int
+parseInt :: Validate f => String -> f [AppError] Int
 parseInt s = maybe (_Failure # [NotAnInteger s]) (_Success #) (readMaybe s)
