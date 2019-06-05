@@ -39,6 +39,7 @@ import           Control.Monad.Except                     ( ExceptT
 import           Data.Validation                          ( Validate
                                                           , _Failure
                                                           , _Success
+                                                          , toEither
                                                           )
 import           Options.Applicative                      ( Parser
                                                           , flag
@@ -122,7 +123,7 @@ mkRangeFromInput
   :: (AppConfig m, MonadError [AppError] m) => (String, String) -> m [Int]
 mkRangeFromInput candidates = do
   order      <- asks parityOrder
-  (from, to) <- liftEither $ case order of
+  (from, to) <- liftEither . toEither $ case order of
     OddEven -> uncurry mkOddEvenPair candidates
     EvenOdd -> uncurry mkEvenOddPair candidates
   liftEither $ validateRange (from, to)
