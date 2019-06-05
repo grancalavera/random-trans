@@ -1,8 +1,8 @@
 {-# LANGUAGE GeneralisedNewtypeDeriving #-}
 -- The ConstraintKinds extension allows for using MonadReader providing the reader
--- type but not the underlying monad; coupled with FlexibleContexts, AppOptions can
--- use parametric polymorphism
+-- type but not the underlying monad ...
 {-# LANGUAGE ConstraintKinds #-}
+-- ... coupled with FlexibleContexts, AppConfig can use parametric polymorphism
 {-# LANGUAGE FlexibleContexts #-}
 
 module Main where
