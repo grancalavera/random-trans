@@ -7,50 +7,16 @@
 
 module Main where
 
-import           Prelude                           hiding ( (!!) )
-import           System.Random                            ( getStdGen )
-import           Text.Read                                ( readMaybe )
-import           Data.Maybe                               ( maybe )
-import           Data.List.NonEmpty                       ( NonEmpty
-                                                          , (!!)
-                                                          , fromList
-                                                          )
-import           Control.Monad.Random.Strict              ( RandomGen
-                                                          , Rand
-                                                          , getRandomR
-                                                          , evalRand
-                                                          )
+import           System.Random
+import           Text.Read
+import qualified Data.List.NonEmpty            as NonEmpty
+import           Data.List.NonEmpty                       ( NonEmpty )
+import           Control.Monad.Random.Strict
 import           Control.Lens                             ( (#) )
-import           Control.Monad.IO.Class                   ( MonadIO
-                                                          , liftIO
-                                                          )
-import           Control.Monad.Reader                     ( ReaderT
-                                                          , MonadReader
-                                                          , asks
-                                                          , runReaderT
-                                                          )
-import           Control.Monad.Except                     ( ExceptT
-                                                          , MonadError
-                                                          , liftEither
-                                                          , runExceptT
-                                                          )
-
-import           Data.Validation                          ( Validate
-                                                          , _Failure
-                                                          , _Success
-                                                          , toEither
-                                                          )
-import           Options.Applicative                      ( Parser
-                                                          , flag
-                                                          , long
-                                                          , short
-                                                          , help
-                                                          , execParser
-                                                          , helper
-                                                          , info
-                                                          , fullDesc
-                                                          , progDesc
-                                                          )
+import           Control.Monad.Reader
+import           Control.Monad.Except
+import           Data.Validation
+import           Options.Applicative
 
 data Parity = Even | Odd deriving Show
 
@@ -131,12 +97,12 @@ shuffleRange range = do
 shuffle :: (RandomGen g, Eq a) => [a] -> Rand g [a]
 shuffle [] = return []
 shuffle xs = do
-  x'  <- choose $ fromList xs
+  x'  <- choose $ NonEmpty.fromList xs
   xs' <- shuffle $ filter (x' /=) xs
   return $ x' : xs'
 
 choose :: (RandomGen g) => NonEmpty a -> Rand g a
-choose xs = (xs !!) <$> getRandomR (0, length xs - 1)
+choose xs = (xs NonEmpty.!!) <$> getRandomR (0, length xs - 1)
 
 -- Allows to test a validation with more than 1 error
 -- for instance sending two strings that will not
