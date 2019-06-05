@@ -51,7 +51,6 @@ import           Options.Applicative                      ( Parser
                                                           , fullDesc
                                                           , progDesc
                                                           )
-type Program m a = ExceptT [AppError] m a
 
 data Parity = Even | Odd deriving Show
 
@@ -66,7 +65,6 @@ data ParityOrder = OddEven | EvenOdd deriving (Show)
 
 newtype Options = Options
   { parityOrder :: ParityOrder } deriving Show
-
 
 type AppConfig = MonadReader Options
 
