@@ -49,7 +49,9 @@ main = do
     (fullDesc <> progDesc "Validation and Random in the same program")
 
 run :: App [Int]
-run = getUserInput >>= mkRangeFromInput >>= shuffleRange
+run = do
+  range <- getUserInput >>= mkRangeFromInput
+  liftIO $ getStdGen >>= return . (shuffleRange range)
 
 parseOptions :: Parser Options
 parseOptions = Options <$> flag
@@ -89,10 +91,8 @@ mkRangeFromInput candidates = do
   liftEither $ validateRange (from, to)
   return [from .. to]
 
-shuffleRange :: (AppConfig m, MonadIO m) => [Int] -> m [Int]
-shuffleRange range = do
-  gen <- liftIO getStdGen
-  return $ evalRand (shuffle range) gen
+shuffleRange :: RandomGen g => [Int] ->  g -> [Int]
+shuffleRange range = evalRand (shuffle range)
 
 shuffle :: (RandomGen g, Eq a) => [a] -> Rand g [a]
 shuffle [] = return []
